@@ -1,0 +1,3 @@
+Conda is working good, had some issues with the Venv
+Get this lib and u will be able to run the model on ur local device.
+- moshi==0.2.8
