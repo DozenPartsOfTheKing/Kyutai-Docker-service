@@ -108,6 +108,14 @@ async def tts_endpoint(
 
     Returns the audio as WAV file.
     """
+    # Map placeholder values from Swagger UI ("string") to None for easier use.
+    if hf_repo in {None, "", "string"}:
+        hf_repo = "kyutai/tts-1b-dsm"
+    if voice_repo in {None, "", "string"}:
+        voice_repo = None
+    if voice in {None, "", "string"}:
+        voice = None
+
     # Write text to a temporary file because existing script expects a file or stdin
     with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".txt") as txt_file:
         txt_file.write(text)
