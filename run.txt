@@ -1,3 +1,7 @@
 Conda is working good, had some issues with the Venv
 Get this lib and u will be able to run the model on ur local device.
 - moshi==0.2.8
+
+#This command runs the main script to create the audio from the text.
+python scripts/tts_pytorch.py text_to_say.txt audio_output.wav
+
