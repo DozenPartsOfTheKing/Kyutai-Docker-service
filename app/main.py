@@ -99,7 +99,7 @@ async def stt_endpoint(
 @app.post("/tts", summary="Text-to-Speech")
 async def tts_endpoint(
     text: Annotated[str, Form(description="Текст для синтеза")],
-    hf_repo: Annotated[Optional[str], Form()] = "kyutai/tts-1b-dsm",
+    hf_repo: Annotated[Optional[str], Form()] = "kyutai/tts-1.6b-en_fr",
     voice_repo: Annotated[Optional[str], Form()] = None,
     voice: Annotated[Optional[str], Form()] = None,
     device: Annotated[str, Form()] = "cuda",
@@ -110,7 +110,7 @@ async def tts_endpoint(
     """
     # Map placeholder values from Swagger UI ("string") to None for easier use.
     if hf_repo in {None, "", "string"}:
-        hf_repo = "kyutai/tts-1b-dsm"
+        hf_repo = "kyutai/tts-1.6b-en_fr"
     if voice_repo in {None, "", "string"}:
         voice_repo = None
     if voice in {None, "", "string"}:
