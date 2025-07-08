@@ -99,7 +99,7 @@ async def stt_endpoint(
 @app.post("/tts", summary="Text-to-Speech")
 async def tts_endpoint(
     text: Annotated[str, Form(description="Текст для синтеза")],
-    hf_repo: Annotated[Optional[str], Form()] = None,
+    hf_repo: Annotated[Optional[str], Form()] = "kyutai/tts-1b-dsm",
     voice_repo: Annotated[Optional[str], Form()] = None,
     voice: Annotated[Optional[str], Form()] = None,
     device: Annotated[str, Form()] = "cuda",
