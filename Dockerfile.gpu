@@ -1,0 +1,25 @@
+FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
+
+# System libraries required by moshi / audio processing
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Workdir
+WORKDIR /app
+
+# Copy dependency list first to leverage cache
+COPY requirements.txt ./
+
+# Install python deps. The base image already contains torch+cuda, avoid reinstalling
+# If torch version in requirements mismatches, we ignore it to keep CUDA build.
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121 \
+        --no-deps -r requirements.txt \
+    && pip install --no-cache-dir fastapi uvicorn[standard]
+
+# Copy the rest of the source
+COPY . .
+
+ENV PORT=8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
