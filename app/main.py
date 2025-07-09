@@ -6,11 +6,13 @@ import os
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
+
+from huggingface_hub import list_repo_files
 
 logger = logging.getLogger("server")
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -27,6 +29,38 @@ app.add_middleware(
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = ROOT_DIR / "scripts"
+
+# Constants for voice emotions we know exist in the Expresso dataset on HF.
+Emotion = Literal["neutral", "happy", "angry", "sad"]
+
+
+def _pick_voice_by_emotion(
+    emotion: str,
+    repo: str = "kyutai/tts-voices",
+) -> str:
+    """Return a relative voice path that matches the requested emotion.
+
+    We scan files once (cached) and pick a deterministic voice sample for the
+    given *emotion*. Raises *ValueError* if nothing is found.
+    """
+
+    # Cache results so we do not hit the network on every request.
+    global _EMOTION_CACHE
+    try:
+        cache = _EMOTION_CACHE  # type: ignore[name-defined]
+    except NameError:
+        cache = {}  # type: ignore[assignment]
+        _EMOTION_CACHE = cache  # type: ignore[misc]
+
+    if repo not in cache:
+        files = list_repo_files(repo)
+        cache[repo] = [f for f in files if f.startswith("expresso/") and f.endswith(".wav")]
+
+    matches = [f for f in cache[repo] if f"_{emotion}_" in f]
+    if not matches:
+        raise ValueError(f"No voice sample with emotion '{emotion}' found in {repo}.")
+    # Pick the first file for stability.
+    return sorted(matches)[0]
 
 
 @app.get("/health", response_class=PlainTextResponse)
@@ -102,6 +136,7 @@ async def tts_endpoint(
     hf_repo: Annotated[Optional[str], Form()] = "kyutai/tts-1.6b-en_fr",
     voice_repo: Annotated[Optional[str], Form()] = None,
     voice: Annotated[Optional[str], Form()] = None,
+    emotion: Annotated[Optional[Emotion], Form(description="Эмоция голоса")] = None,
     device: Annotated[str, Form()] = "cuda",
     format: Annotated[str, Form(description="Формат аудио: wav или pcm")] = "wav",
     temp: Annotated[float, Form(description="Температура выборки (интонация), 0.0-1.0")] = 0.6,
@@ -117,6 +152,17 @@ async def tts_endpoint(
         voice_repo = None
     if voice in {None, "", "string"}:
         voice = None
+    if emotion in {None, "", "string"}:
+        emotion = None
+
+    # If emotion is provided but explicit voice is not, try to resolve it automatically.
+    if emotion and not voice:
+        try:
+            resolved_repo = voice_repo or "kyutai/tts-voices"
+            voice = _pick_voice_by_emotion(emotion, resolved_repo)
+            voice_repo = resolved_repo
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
     # Write text to a temporary file because existing script expects a file or stdin
     with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".txt") as txt_file:
