@@ -50,12 +50,25 @@ def main():
         default="cuda",
         help="Device on which to run, defaults to 'cuda'.",
     )
+    parser.add_argument(
+        "--fp16",
+        action="store_true",
+        help="Enable mixed-precision (float16) inference when running on CUDA for faster generation.",
+    )
     args = parser.parse_args()
 
     print("Loading model...")
     checkpoint_info = CheckpointInfo.from_hf_repo(args.hf_repo)
     tts_model = TTSModel.from_checkpoint_info(
         checkpoint_info, n_q=32, temp=0.6, device=args.device
+    )
+
+    # Configure autocast context for optional float16 inference
+    from contextlib import nullcontext
+
+    use_fp16 = args.fp16 and args.device.startswith("cuda")
+    autocast_ctx = (
+        torch.cuda.amp.autocast(dtype=torch.float16) if use_fp16 else nullcontext()
     )
 
     if args.inp == "-":
@@ -101,16 +114,18 @@ def main():
             callback=audio_callback,
         ):
             with tts_model.mimi.streaming(1):
-                tts_model.generate(
-                    [entries], [condition_attributes], on_frame=_on_frame
-                )
+                with autocast_ctx:
+                    tts_model.generate(
+                        [entries], [condition_attributes], on_frame=_on_frame
+                    )
             time.sleep(3)
             while True:
                 if pcms.qsize() == 0:
                     break
                 time.sleep(1)
     else:
-        result = tts_model.generate([entries], [condition_attributes])
+        with autocast_ctx:
+            result = tts_model.generate([entries], [condition_attributes])
         with tts_model.mimi.streaming(1), torch.no_grad():
             pcms = []
             for frame in result.frames[tts_model.delay_steps :]:

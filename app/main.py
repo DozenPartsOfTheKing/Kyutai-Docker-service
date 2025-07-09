@@ -103,6 +103,7 @@ async def tts_endpoint(
     voice_repo: Annotated[Optional[str], Form()] = None,
     voice: Annotated[Optional[str], Form()] = None,
     device: Annotated[str, Form()] = "cuda",
+    fp16: Annotated[bool, Form()] = False,
 ) -> FileResponse:
     """Generates speech from text using Kyutai TTS.
 
@@ -137,6 +138,8 @@ async def tts_endpoint(
         args += ["--voice-repo", voice_repo]
     if voice:
         args += ["--voice", voice]
+    if fp16:
+        args.append("--fp16")
 
     try:
         await _run_script(args)

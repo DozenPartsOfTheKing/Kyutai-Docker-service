@@ -34,4 +34,4 @@ ENV CC=gcc
 ENV CXX=g++
 
 # Allow configurable number of Uvicorn workers via $WORKERS (defaults to 1)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers $WORKERS"] 
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers $WORKERS --timeout-keep-alive ${UVICORN_TIMEOUT:-120}"] 
