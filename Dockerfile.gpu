@@ -1,12 +1,16 @@
 FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
 
-# System libraries required by moshi / audio processing
+# Шаг-1: обновляем ключи и ставим компиляторы, не проверяя подписи
+RUN apt-get update --allow-insecure-repositories \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates gnupg ubuntu-keyring \
+       build-essential clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# Шаг-2: обычная установка нужных библиотек
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ffmpeg \
-        libsndfile1 \
-        build-essential \
-        clang \
+       ffmpeg libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Workdir
