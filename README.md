@@ -74,7 +74,6 @@ docker compose -f docker-compose.gpu.yml up --build
 | `voice_repo` | `string` | — | Репозиторий голосовых эмбеддингов. |
 | `voice` | `string` | — | Конкретный голос внутри `voice_repo`. |
 | `device` | `string` | `cuda` | Устройство инференса. |
-| `fp16` | `bool` | `false` | Включить half-precision. |
 | `format` | `string` | `wav` | `wav` или `pcm`. |
 | `temp` | `float` | `0.6` | Температура сэмплирования (интонация). 0 — монотонно, 1 — эмоционально. |
 
@@ -124,7 +123,6 @@ curl -F audio=@audio/bria.mp3 http://localhost:8000/stt
 ### TTS → WAV
 ```bash
 curl -F text="Привет, как дела?" \
-     -F fp16=true \
      -F temp=0.4 \
      http://localhost:8000/tts --output speech.wav
 ```

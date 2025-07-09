@@ -103,7 +103,6 @@ async def tts_endpoint(
     voice_repo: Annotated[Optional[str], Form()] = None,
     voice: Annotated[Optional[str], Form()] = None,
     device: Annotated[str, Form()] = "cuda",
-    fp16: Annotated[bool, Form()] = False,
     format: Annotated[str, Form(description="Формат аудио: wav или pcm")] = "wav",
     temp: Annotated[float, Form(description="Температура выборки (интонация), 0.0-1.0")] = 0.6,
 ) -> FileResponse:
@@ -143,8 +142,6 @@ async def tts_endpoint(
         args += ["--voice", voice]
     # audio options
     args += ["--format", format, "--temp", str(temp)]
-    if fp16:
-        args.append("--fp16")
 
     try:
         await _run_script(args)

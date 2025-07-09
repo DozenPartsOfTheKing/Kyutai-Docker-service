@@ -51,11 +51,6 @@ def main():
         help="Device on which to run, defaults to 'cuda'.",
     )
     parser.add_argument(
-        "--fp16",
-        action="store_true",
-        help="Enable mixed-precision (float16) inference when running on CUDA for faster generation.",
-    )
-    parser.add_argument(
         "--format",
         choices=["wav", "pcm"],
         default="wav",
@@ -75,12 +70,8 @@ def main():
         checkpoint_info, n_q=32, temp=args.temp, device=args.device
     )
 
-    # Optional FP16
+    # FP16 support removed by user request
     from contextlib import nullcontext
-
-    use_fp16 = args.fp16 and args.device.startswith("cuda")
-    if use_fp16:
-        tts_model = tts_model.half()  # convert parameters & buffers to float16
     autocast_ctx = nullcontext()
 
     if args.inp == "-":
@@ -136,8 +127,7 @@ def main():
                     break
                 time.sleep(1)
     else:
-        with autocast_ctx:
-            result = tts_model.generate([entries], [condition_attributes])
+        result = tts_model.generate([entries], [condition_attributes])
         with tts_model.mimi.streaming(1), torch.no_grad():
             pcms = []
             for frame in result.frames[tts_model.delay_steps :]:
