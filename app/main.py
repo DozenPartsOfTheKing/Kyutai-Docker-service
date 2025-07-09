@@ -63,6 +63,23 @@ def _pick_voice_by_emotion(
     return sorted(matches)[0]
 
 
+# Reuse the same cache for listing
+def _list_voices(repo: str = "kyutai/tts-voices") -> list[str]:
+    """Return all .wav voice sample paths inside *repo* under expresso/.*"""
+
+    global _EMOTION_CACHE  # type: ignore[name-defined]
+    try:
+        cache = _EMOTION_CACHE  # type: ignore[name-defined]
+    except NameError:
+        cache = {}  # type: ignore[assignment]
+        _EMOTION_CACHE = cache  # type: ignore[misc]
+
+    if repo not in cache:
+        files = list_repo_files(repo)
+        cache[repo] = [f for f in files if f.startswith("expresso/") and f.endswith(".wav")]
+    return cache[repo]
+
+
 @app.get("/health", response_class=PlainTextResponse)
 async def health() -> str:
     """Simple liveness probe."""
@@ -202,4 +219,24 @@ async def tts_endpoint(
         path=out_path,
         filename=f"output.{format}",
         media_type=media_type,
-    ) 
+    )
+
+
+@app.get("/voices", summary="List available voice samples")
+async def voices_endpoint(
+    voice_repo: Annotated[str, Form(description="HF repo or local dir with voices")] = "kyutai/tts-voices",
+    emotion: Annotated[Optional[str], Form(description="Filter by emotion substring e.g. happy, angry")] = None,
+) -> list[str]:
+    """Return list of available voice sample paths.
+
+    This helps Swagger users pick a specific voice for the /tts endpoint.
+    """
+
+    try:
+        voices = _list_voices(voice_repo)
+        if emotion:
+            voices = [v for v in voices if f"_{emotion}_" in v]
+        return voices
+    except Exception as exc:
+        logger.error("Failed to list voices: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc)) 
