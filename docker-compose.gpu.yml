@@ -1,0 +1,14 @@
+services:
+  speakerman:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: speakerman-api-gpu
+    runtime: nvidia          # requires NVIDIA Container Toolkit
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0   # 0 – использовать первую A5000; поменяйте на 1 для второй
+      - WORKERS=4                  # количество Uvicorn процессов
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface 
