@@ -9,6 +9,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=0   # 0 – использовать первую A5000; поменяйте на 1 для второй
       - WORKERS=4                  # оптимально для A5000, чтобы не переполнить GPU
       - UVICORN_TIMEOUT=120        # таймаут keep-alive (сек)
+      - HF_HOME=/opt/models        # внутри контейнера уже лежат скачанные веса
       - PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.9,max_split_size_mb:128
     ports:
       - "8000:8000"

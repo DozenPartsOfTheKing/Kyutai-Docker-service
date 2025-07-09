@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 from typing import Annotated, Optional, Literal
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 
@@ -224,8 +224,8 @@ async def tts_endpoint(
 
 @app.get("/voices", summary="List available voice samples")
 async def voices_endpoint(
-    voice_repo: Annotated[str, Form(description="HF repo or local dir with voices")] = "kyutai/tts-voices",
-    emotion: Annotated[Optional[str], Form(description="Filter by emotion substring e.g. happy, angry")] = None,
+    voice_repo: Annotated[str, Query(description="HF repo or local dir with voices")] = "kyutai/tts-voices",
+    emotion: Annotated[Optional[str], Query(description="Filter by emotion substring e.g. happy, angry")] = None,
 ) -> list[str]:
     """Return list of available voice sample paths.
 

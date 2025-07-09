@@ -20,6 +20,7 @@
    * [/health](#health)
    * [/stt](#stt)
    * [/tts](#tts)
+   * [/voices](#voices)
 3. [Конфиг Docker/GPU](#конфиг-dockergpu)
 4. [Примеры](#примеры)
 5. [Разработка](#разработка)
@@ -81,17 +82,37 @@ docker compose -f docker-compose.gpu.yml up --build
 
 > 🎧 Если указать `out == "-"` внутри скриптов, аудио будет стримиться прямо на устройство (см. `scripts/tts_pytorch.py`). Для REST-endpoint’а стриминг пока не реализован — можно добавить WebSocket, если понадобится.
 
+### <a id="voices"></a>GET `/voices`
+Возвращает массив путей WAV-файлов, доступных в репозитории голосов.
+
+| Параметр | Тип | По-умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `voice_repo` | `string` | `kyutai/tts-voices` | Репозиторий с эталонными голосами. |
+| `emotion` | `string` | — | Фильтр по подстроке эмоции (`happy`, `angry`, `calm` …). |
+
+Пример:
+
+```bash
+curl 'http://localhost:8000/voices?emotion=happy' | jq -r '.[0]'
+# → expresso/ex03-ex01_happy_001_channel1_334s.wav
+```
+
+Скопируйте полученную строку в поле `voice` при вызове `/tts`.
+
 ---
 
 ## 🐳 Конфиг Docker/GPU
 
-`Dockerfile.gpu` наследуется от официального `pytorch/pytorch:2.2.2-cuda12.1` и устанавливает:
+`Dockerfile.gpu` теперь **пред-загружает весы** Kyutai-моделей во время сборки (директория `/opt/models`). При рантайме сетевое соединение с HuggingFace не требуется; latency «первого запроса» < 300 мс.
 
-* `fastapi`, `uvicorn[standard]`, `moshi`, `sphn` и др.
-* ENV-тюнинги:
-  * `PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.9,max_split_size_mb:128`
-  * `CUDA_LAUNCH_BLOCKING=0`
-  * `TF_FORCE_GPU_ALLOW_GROWTH=true`
+Основные шаги:
+1. `pip install huggingface_hub`
+2. `snapshot_download("kyutai/tts-1.6b-en_fr", "/opt/models/tts")`
+3. `snapshot_download("kyutai/tts-voices", "/opt/models/voices")`
+
+Затем выставляется `ENV HF_HOME=/opt/models`, и библиотека ищет веса локально.
+
+Базовый образ по-прежнему `pytorch/pytorch:2.2.2-cuda12.1`.
 
 Запуск Uvicorn:
 ```bash
@@ -107,6 +128,7 @@ uvicorn app.main:app \
 environment:
   - WORKERS=4
   - UVICORN_TIMEOUT=120
+  - HF_HOME=/opt/models
 volumes:
   - /mnt/ssd/huggingface_cache:/root/.cache/huggingface
 ```

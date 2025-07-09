@@ -11,7 +11,16 @@ WORKDIR /app
 # Copy dependency list & install first to leverage Docker cache
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir fastapi uvicorn[standard]
+    && pip install --no-cache-dir fastapi uvicorn[standard] \
+    && pip install --no-cache-dir huggingface_hub \
+    && python - <<'PY'
+from huggingface_hub import snapshot_download
+snapshot_download("kyutai/tts-1.6b-en_fr", local_dir="/opt/models/tts", local_dir_use_symlinks=False)
+snapshot_download("kyutai/tts-voices", local_dir="/opt/models/voices", local_dir_use_symlinks=False)
+PY
+
+# Tell HF libraries to look here first
+ENV HF_HOME=/opt/models
 
 # Copy source
 COPY . .
