@@ -104,6 +104,8 @@ async def tts_endpoint(
     voice: Annotated[Optional[str], Form()] = None,
     device: Annotated[str, Form()] = "cuda",
     fp16: Annotated[bool, Form()] = False,
+    format: Annotated[str, Form(description="Формат аудио: wav или pcm")] = "wav",
+    temp: Annotated[float, Form(description="Температура выборки (интонация), 0.0-1.0")] = 0.6,
 ) -> FileResponse:
     """Generates speech from text using Kyutai TTS.
 
@@ -122,7 +124,8 @@ async def tts_endpoint(
         txt_file.write(text)
         txt_path = Path(txt_file.name)
 
-    out_path = Path(tempfile.gettempdir()) / f"tts_{uuid.uuid4().hex}.wav"
+    suffix = ".wav" if format == "wav" else ".pcm"
+    out_path = Path(tempfile.gettempdir()) / f"tts_{uuid.uuid4().hex}{suffix}"
 
     args: list[str] = [
         "python",
@@ -138,6 +141,8 @@ async def tts_endpoint(
         args += ["--voice-repo", voice_repo]
     if voice:
         args += ["--voice", voice]
+    # audio options
+    args += ["--format", format, "--temp", str(temp)]
     if fp16:
         args.append("--fp16")
 
@@ -149,8 +154,9 @@ async def tts_endpoint(
         except Exception as exc:
             logger.warning("Failed to clean temp text: %s", exc)
 
+    media_type = "audio/wav" if format == "wav" else "application/octet-stream"
     return FileResponse(
         path=out_path,
-        filename="output.wav",
-        media_type="audio/wav",
+        filename=f"output.{format}",
+        media_type=media_type,
     ) 

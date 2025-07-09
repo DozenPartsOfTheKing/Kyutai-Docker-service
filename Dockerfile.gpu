@@ -30,8 +30,11 @@ COPY . .
 
 ENV PORT=8000
 ENV WORKERS=1
+ENV PYTORCH_CUDA_ALLOC_CONF="garbage_collection_threshold:0.9,max_split_size_mb:128"
+ENV CUDA_LAUNCH_BLOCKING=0
+ENV TF_FORCE_GPU_ALLOW_GROWTH=true
 ENV CC=gcc
 ENV CXX=g++
 
 # Allow configurable number of Uvicorn workers via $WORKERS (defaults to 1)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers $WORKERS --timeout-keep-alive ${UVICORN_TIMEOUT:-120}"] 
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers $WORKERS --loop uvloop --timeout-keep-alive ${UVICORN_TIMEOUT:-120}"] 

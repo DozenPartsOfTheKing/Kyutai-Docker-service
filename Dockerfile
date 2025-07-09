@@ -18,5 +18,8 @@ COPY . .
 
 # Default port
 ENV PORT=8000
+ENV WORKERS=2
+# Tune Python & Uvicorn
+ENV UVICORN_TIMEOUT=120
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers $WORKERS --loop uvloop --timeout-keep-alive ${UVICORN_TIMEOUT}"] 

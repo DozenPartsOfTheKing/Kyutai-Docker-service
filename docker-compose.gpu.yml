@@ -8,9 +8,19 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=0   # 0 – использовать первую A5000; поменяйте на 1 для второй
       - WORKERS=4                  # оптимально для A5000, чтобы не переполнить GPU
-      - UVICORN_THREADS=2          # количество потоков на процесс
       - UVICORN_TIMEOUT=120        # таймаут keep-alive (сек)
+      - PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.9,max_split_size_mb:128
     ports:
       - "8000:8000"
     volumes:
-      - ~/.cache/huggingface:/root/.cache/huggingface 
+      - /mnt/ssd/huggingface_cache:/root/.cache/huggingface 
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          cpus: "4"
+          memory: 8G 

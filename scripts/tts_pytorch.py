@@ -55,12 +55,24 @@ def main():
         action="store_true",
         help="Enable mixed-precision (float16) inference when running on CUDA for faster generation.",
     )
+    parser.add_argument(
+        "--format",
+        choices=["wav", "pcm"],
+        default="wav",
+        help="Output audio format. 'wav' produces a standard 16-bit WAV file, 'pcm' – raw int16 little-endian stream.",
+    )
+    parser.add_argument(
+        "--temp",
+        type=float,
+        default=0.6,
+        help="Sampling temperature (intonation / creativity). Lower = more monotone, higher = more varied.",
+    )
     args = parser.parse_args()
 
     print("Loading model...")
     checkpoint_info = CheckpointInfo.from_hf_repo(args.hf_repo)
     tts_model = TTSModel.from_checkpoint_info(
-        checkpoint_info, n_q=32, temp=0.6, device=args.device
+        checkpoint_info, n_q=32, temp=args.temp, device=args.device
     )
 
     # Configure autocast context for optional float16 inference
@@ -132,7 +144,10 @@ def main():
                 pcm = tts_model.mimi.decode(frame[:, 1:, :]).cpu().numpy()
                 pcms.append(np.clip(pcm[0, 0], -1, 1))
             pcm = np.concatenate(pcms, axis=-1)
-        sphn.write_wav(args.out, pcm, tts_model.mimi.sample_rate)
+        if args.format == "wav":
+            sphn.write_wav(args.out, pcm, tts_model.mimi.sample_rate)
+        else:  # pcm raw int16
+            (pcm * 32767).astype(np.int16).tofile(args.out)
 
 
 if __name__ == "__main__":
