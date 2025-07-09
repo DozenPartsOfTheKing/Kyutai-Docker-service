@@ -7,7 +7,7 @@ services:
     runtime: nvidia          # requires NVIDIA Container Toolkit
     environment:
       - NVIDIA_VISIBLE_DEVICES=0   # 0 – использовать первую A5000; поменяйте на 1 для второй
-      - WORKERS=4                  # количество Uvicorn процессов
+      - WORKERS=8                  # количество Uvicorn процессов
     ports:
       - "8000:8000"
     volumes:
