@@ -31,8 +31,8 @@
 
 ```bash
 # 1. Клонируем репозиторий
-git clone https://github.com/your-org/speakerman.git
-cd speakerman
+git clone https://github.com/DozenPartsOfTheKing/Kyutai-Docker-service
+cd Kyutai-Docker-service
 
 # 2. Стартуем GPU-контейнер (нужен NVIDIA Container Toolkit)
 #    Используется файл docker-compose.gpu.yml
