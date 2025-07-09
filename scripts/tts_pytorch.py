@@ -75,13 +75,13 @@ def main():
         checkpoint_info, n_q=32, temp=args.temp, device=args.device
     )
 
-    # Configure autocast context for optional float16 inference
+    # Optional FP16
     from contextlib import nullcontext
 
     use_fp16 = args.fp16 and args.device.startswith("cuda")
-    autocast_ctx = (
-        torch.cuda.amp.autocast(dtype=torch.float16) if use_fp16 else nullcontext()
-    )
+    if use_fp16:
+        tts_model = tts_model.half()  # convert parameters & buffers to float16
+    autocast_ctx = nullcontext()
 
     if args.inp == "-":
         if sys.stdin.isatty():  # Interactive
