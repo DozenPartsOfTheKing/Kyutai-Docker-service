@@ -21,10 +21,10 @@ COPY requirements.txt ./
 
 # Install python deps. The base image already contains torch+cuda, avoid reinstalling
 # If torch version in requirements mismatches, we ignore it to keep CUDA build.
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121 \
-        --no-deps -r requirements.txt \
-    && pip install --no-cache-dir fastapi uvicorn[standard] \
-    && pip install --no-cache-dir huggingface_hub
+RUN grep -vE '^torch' requirements.txt > req_notorch.txt && \
+    pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121 \
+        --no-deps -r req_notorch.txt && \
+    pip install --no-cache-dir fastapi uvicorn[standard] huggingface_hub
 
 # ---------- Prefetch Kyutai STT/TTS weights ----------
 RUN python - <<'PY'
