@@ -11,13 +11,42 @@ from typing import Annotated, Optional, Literal
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.openapi.utils import get_openapi
 
 from huggingface_hub import list_repo_files
+
+# ---------------------------------------------------------
+# FastAPI application
+# ---------------------------------------------------------
+
+tags_metadata = [
+    {
+        "name": "health",
+        "description": "Простой liveness-probe для Kubernetes/NGINX. Возвращает `ok`.",
+    },
+    {
+        "name": "stt",
+        "description": "**Speech-to-Text** на базе Kyutai STT. Принимает аудио-файл, возвращает транскрипт с тайм-стемпами.",
+    },
+    {
+        "name": "tts",
+        "description": "**Text-to-Speech**. Генерирует WAV/PCM с указанным голосом и температурой.",
+    },
+    {
+        "name": "voices",
+        "description": "Справочный энд-пойнт. Показывает доступные образцы голоса (Expresso dataset).",
+    },
+]
 
 logger = logging.getLogger("server")
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
-app = FastAPI(title="SpeakerMan API", version="0.1.0")
+app = FastAPI(
+    title="SpeakerMan API",
+    version="0.1.0",
+    description="API-обёртка над Kyutai STT/TTS с поддержкой GPU и выбором голоса.",
+    openapi_tags=tags_metadata,
+)
 
 # Allow all origins by default; tune if exposing publicly.
 app.add_middleware(

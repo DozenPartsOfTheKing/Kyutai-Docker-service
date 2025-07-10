@@ -51,6 +51,13 @@ docker compose -f docker-compose.gpu.yml up --build
 
 ## 📖 API
 
+Документация генерируется автоматически FastAPI и доступна в двух форматах:
+
+* Swagger UI – `http://localhost:8000/docs`
+* ReDoc       – `http://localhost:8000/redoc`
+
+Эндпоинты сгруппированы по тегам: **health**, **stt**, **tts**, **voices**.
+
 ### <a id="health"></a>GET `/health`
 Простой probe для Kubernetes/NGINX. Возвращает `ok`.
 
