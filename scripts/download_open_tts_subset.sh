@@ -16,6 +16,9 @@ FRACTION="0.01"
 OUTDIR="open_tts_subset"
 # Official 5% sample archive published by the ishine/open_tts repository
 URL_SAMPLE="https://ru-open-stt.ams3.cdn.digitaloceanspaces.com/radio_pspeech_sample_mp3.tar.gz"
+# Azure mirror (OPUS archive ~12GB). Used as fallback or when --mirror azure specified.
+URL_SAMPLE_AZ="https://azureopendatastorage.blob.core.windows.net/openstt/ru_open_stt_opus/archives/radio_pspeech_sample_manifest.tar.gz"
+
 CONNECTIONS=16
 
 ################################################################################
@@ -40,6 +43,8 @@ while [[ $# -gt 0 ]]; do
       FRACTION="$2"; shift 2;;
     --outdir|-o)
       OUTDIR="$2"; shift 2;;
+    --mirror|-m)
+      MIRROR="$2"; shift 2;;
     --help|-h)
       usage;;
     *)
@@ -57,6 +62,18 @@ if not 0 < f <= 1:
     sys.exit("Fraction must be between 0 and 1")
 PY
 
+# Select URL based on mirror choice
+if [[ "$MIRROR" == "azure" ]]; then
+  URL_SAMPLE="$URL_SAMPLE_AZ"
+elif [[ "$MIRROR" == "do" ]]; then
+  URL_SAMPLE="$URL_SAMPLE"
+else
+  echo "Unknown mirror '$MIRROR'. Use 'do' or 'azure'." >&2
+  exit 1
+fi
+
+echo ">> Using mirror: $MIRROR — $URL_SAMPLE"
+
 ################################################################################
 # Prepare working dirs
 ################################################################################
@@ -67,13 +84,29 @@ TARBALL="$TEMP_DIR/sample.tar.gz"
 ################################################################################
 # Download sample archive (≈10 GB) if not already in temp
 ################################################################################
+# Attempt download with retry + fallback to azure if DigitalOcean fails
 if [[ ! -f "$TARBALL" ]]; then
   echo ">> Downloading 5% sample archive…"
-  if command -v aria2c &>/dev/null; then
-    aria2c -x"$CONNECTIONS" -s"$CONNECTIONS" -o "$TARBALL" "$URL_SAMPLE"
-  else
-    echo "aria2c not found, falling back to wget (single stream, slower)" >&2
-    wget -O "$TARBALL" "$URL_SAMPLE"
+  success=0
+  download() {
+    if command -v aria2c &>/dev/null; then
+      aria2c -x"$CONNECTIONS" -s"$CONNECTIONS" -o "$TARBALL" "$1" && success=1 || success=0
+    else
+      echo "aria2c not found, falling back to wget (single stream, slower)" >&2
+      wget -O "$TARBALL" "$1" && success=1 || success=0
+    fi
+  }
+
+  download "$URL_SAMPLE"
+
+  if [[ "$success" -ne 1 && "$MIRROR" == "do" ]]; then
+    echo "Primary mirror failed. Falling back to Azure…"
+    download "$URL_SAMPLE_AZ"
+  fi
+
+  if [[ "$success" -ne 1 ]]; then
+    echo "Download failed from all mirrors. Check network or URLs." >&2
+    exit 2
   fi
 else
   echo ">> Reusing downloaded archive at $TARBALL"
