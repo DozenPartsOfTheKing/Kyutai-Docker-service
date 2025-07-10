@@ -49,6 +49,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate fraction
+export FRACTION
 python - <<'PY'
 import sys, os
 f = float(os.environ["FRACTION"])
@@ -86,6 +87,7 @@ tar -tzf "$TARBALL" > "$FILELIST"
 audio_list="$TEMP_DIR/audio_files.txt"
 grep -E '\\.(mp3|wav)$' "$FILELIST" > "$audio_list"
 TOTAL=$(wc -l < "$audio_list")
+export TOTAL
 
 if [[ "$TOTAL" -eq 0 ]]; then
   echo "Archive appears to contain no audio files. Exiting." >&2
