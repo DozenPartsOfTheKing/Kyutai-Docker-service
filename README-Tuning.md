@@ -36,6 +36,10 @@ sudo apt-get update && sudo apt-get install -y aria2
 
 
 
+tar -xvzf /tmp/tmp.eG8qB71Fq2/sample.tar.gz -C ~/Dev/SpeakerMan/scripts/open_tts_full
+
+
+
 Установив датасет, его нужно распаковать и соранить - формат 
 
 (base) root@cv4881639:~/Dev/SpeakerMan/scripts/open_tts_full# ls
@@ -62,3 +66,76 @@ public_speech  radio-v4  radio_v4_add
 0cfbac8b350b.txt   13da1b3bce27.opus  295d2d981238.txt   43d1d1e874d3.opus  4e9f9d587caa.txt   a4aa3246348d.opus  c451900bb5b6.txt   f580c6fd3f3c.opus
 1283e6c1794a.opus  13da1b3bce27.txt   2ff7dc2f1f6c.opus  43d1d1e874d3.txt   7ea60067d14c.opus  a4aa3246348d.txt   e43f1e215355.opus  f580c6fd3f3c.txt
 (base) root@cv4881639:~/Dev/SpeakerMan/scripts/open_tts_full/public_speech/0/00# 
+
+
+
+
+# (1) создаём venv и ставим зависимости проекта
+cd ~/Dev/SpeakerMan
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+sudo apt-get update && sudo apt-get install -y ffmpeg aria2
+
+# (2) запускаем end-to-end пайплайн
+bash scripts/finetune_tts_pipeline.sh \
+     --datadir       scripts/open_tts_full \   # где лежат *.opus + *.txt
+     --checkpoint_dir /root/checkpoints/tts_ru \
+     --epochs        3
+
+
+
+(.venv) (base) root@cv4881639:~/Dev/SpeakerMan# bash scripts/finetune_tts_pipeline.sh \
+  --datadir scripts/open_tts_full \
+  --checkpoint_dir /root/checkpoints/tts_ru \
+  --epochs 3
+[PIPE] Preparing manifests …
+[1/4] Scanning dataset…
+
+
+(.venv) (base) root@cv4881639:~/Dev/SpeakerMan# source .venv/bin/activate          # если ещё не
+nohup bash scripts/finetune_tts_pipeline.sh \
+        --datadir scripts/open_tts_full \
+        --checkpoint_dir /root/checkpoints/tts_ru \
+        --epochs 3 \
+        >  run.log 2>&1 &
+disown          # отвязываем процесс от текущего shell
+[1] 817260
+(.venv) (base) root@cv4881639:~/Dev/SpeakerMan# 
+
+Отлично — процесс #817260 запущен в фоне и отвязан от текущего SSH-сеанса.
+
+Полезные команды для контроля / возобновления:
+
+1. Смотреть живой вывод:
+```bash
+tail -f run.log
+```
+
+2. Проверить, что всё ещё работает:
+```bash
+ps -p 817260 -o pid,etime,cmd
+# или
+pgrep -fl finetune_tts_pipeline.sh
+```
+
+3. Если нужно остановить досрочно:
+```bash
+pkill -f finetune_tts_pipeline.sh   # мягко
+# или точечно
+kill 817260
+```
+
+4. После завершения пайплайна в каталоге
+`/root/checkpoints/tts_ru/` появятся:
+```
+config.toml
+last.ckpt / best.ckpt …
+test_hello.wav
+```
+и полный лог `run.log` останется для анализа.
+
+5. Чтобы продолжить обучение позже – достаточно
+запустить ту же команду (с тем же `--checkpoint_dir`);
+скрипт найдёт `last.ckpt` и `moshi-train` продолжит с последнего шага.
+
+Сообщайте, если появятся вопросы по результатам или нужно внести правки в конфиги. 

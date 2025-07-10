@@ -22,6 +22,7 @@ SR=24000
 WORKERS=$(nproc)
 BATCH_SIZE=4
 GRAD_ACCUM=4
+LIMIT_HOURS=""
 
 ################################################################################
 usage() {
@@ -57,6 +58,8 @@ while [[ $# -gt 0 ]]; do
       SR="$2"; shift 2;;
     --workers)
       WORKERS="$2"; shift 2;;
+    --limit_hours)
+      LIMIT_HOURS="$2"; shift 2;;
     --help|-h)
       usage;;
     *)
@@ -85,7 +88,8 @@ if [[ ! -f "$TRAIN_MANIFEST" ]]; then
          --outdir  "$OUT_DIR" \
          --workers "$WORKERS" \
          --split   "$SPLIT" \
-         --sr      "$SR"
+         --sr      "$SR" \
+         ${LIMIT_HOURS:+--limit_hours $LIMIT_HOURS}
 else
   echo "[PIPE] Reusing existing manifests at $OUT_DIR"
 fi
