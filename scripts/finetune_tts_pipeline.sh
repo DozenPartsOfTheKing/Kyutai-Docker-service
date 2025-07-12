@@ -132,11 +132,21 @@ PY
 
 if [[ "$NUM_GPU" -gt 1 ]]; then
   echo "[PIPE] Launching multi-GPU training on $NUM_GPU GPUs …"
+  if command -v moshi-train &>/dev/null; then
+      TRAIN_CMD="moshi-train"
+  else
+      TRAIN_CMD="python -m moshi.train"
+  fi
   torchrun --nproc_per_node=$NUM_GPU \
-    moshi-train --config "$CONFIG_FILE"
+    $TRAIN_CMD --config "$CONFIG_FILE"
 else
   echo "[PIPE] Launching single GPU training …"
-  moshi-train --config "$CONFIG_FILE"
+  if command -v moshi-train &>/dev/null; then
+      TRAIN_CMD="moshi-train"
+  else
+      TRAIN_CMD="python -m moshi.train"
+  fi
+  $TRAIN_CMD --config "$CONFIG_FILE"
 fi
 
 ###############################################################################
